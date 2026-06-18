@@ -72,7 +72,6 @@ void AMyGameState::OnLevelTimeUp()
 void AMyGameState::EndLevel()
 {
 	GetWorldTimerManager().ClearTimer(LevelTimer);
-	CurrentLevelIndex++;
 
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
