@@ -10,5 +10,4 @@ UMyGameInstance::UMyGameInstance()
 void UMyGameInstance::AddToScore(int32 Amount)
 {
 	TotalScore += Amount;
-	GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Blue, FString::Printf(TEXT("Score: %d"),TotalScore));
 }

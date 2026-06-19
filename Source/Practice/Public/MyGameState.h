@@ -12,24 +12,26 @@ class PRACTICE_API AMyGameState : public AGameState
 public:
 	AMyGameState();
 
-	//점수
+#pragma region Score
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Score")
 	int32 Score;
 	UFUNCTION(BlueprintPure, Category = "Score")
 	int32 GetScore() const;
 	UFUNCTION(BlueprintCallable, Category = "Score")
 	void AddScore(int32 Amount);
+#pragma endregion
 
 
-	//코인
+#pragma region Coin
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coin")
 	int32 SpawnedCoinCount;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Coin")
 	int32 CollectedCoinCount;
 	void OnCoinCollected();
+#pragma endregion
 
 
-	//레벨 & 타이머
+#pragma region Level
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
 	TArray<FName> LevelMapNames;
 
@@ -46,9 +48,14 @@ public:
 	void EndLevel();
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	void OnGameOver();
+#pragma endregion
 
 
+#pragma region UI
+	FTimerHandle HUDUpdateTimerHandle;
+	void UpdateHUD();
+#pragma endregion
 
-	//기타
+
 	virtual void BeginPlay() override;
 };
