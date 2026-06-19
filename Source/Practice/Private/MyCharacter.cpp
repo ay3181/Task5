@@ -5,6 +5,9 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Actor.h"
+#include "Components/WidgetComponent.h"
+#include "Components/TextBlock.h"
+#include "MyGameState.h"
 
 
 AMyCharacter::AMyCharacter()
@@ -19,6 +22,10 @@ AMyCharacter::AMyCharacter()
 	CameraComp->SetupAttachment(SpringArmComp, USpringArmComponent::SocketName);
 	CameraComp->bUsePawnControlRotation = false;
 
+    OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
+    OverheadWidget->SetupAttachment(GetMesh());
+    OverheadWidget->SetWidgetSpace(EWidgetSpace::Screen);
+
     NormalSpeed = 600.0f;
     SprintSpeedMultiplier = 1.5f;
     SprintSpeed = NormalSpeed * SprintSpeedMultiplier;
@@ -31,7 +38,7 @@ AMyCharacter::AMyCharacter()
 void AMyCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+    UpdateOverheadHP();
 }
 
 void AMyCharacter::Tick(float DeltaTime)
@@ -173,12 +180,14 @@ float AMyCharacter::GetHealth() const
 void AMyCharacter::AddHealth(float Amount)
 {
     Health = FMath::Clamp(Health + Amount, 0.0f, MaxHealth);
+    UpdateOverheadHP();
 }
 
 float AMyCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
     float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser); //방어력, 피감 등이 적용된 진짜최종 데미지
     Health = FMath::Clamp(Health - ActualDamage, 0.0f, MaxHealth);
+    UpdateOverheadHP();
 
     if (Health <= 0)
     {
@@ -190,5 +199,22 @@ float AMyCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 
 void AMyCharacter::OnDeath()
 {
-    GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Red, FString::Printf(TEXT("YOU DEAD...")));
+    AMyGameState* MyGameState = GetWorld() ? GetWorld()->GetGameState<AMyGameState>() : nullptr;
+    if (MyGameState)
+    {
+        MyGameState->OnGameOver();
+    }
+}
+
+void AMyCharacter::UpdateOverheadHP()
+{
+    if (!OverheadWidget) return;
+
+    UUserWidget* OverheadWidgetInstance = OverheadWidget->GetUserWidgetObject();
+    if (!OverheadWidgetInstance) return;
+
+    if (UTextBlock* HPText = Cast<UTextBlock>(OverheadWidgetInstance->GetWidgetFromName("OverHeadHP")))
+    {
+        HPText->SetText(FText::FromString(FString::Printf(TEXT("%.0f / %.0f"), Health, MaxHealth)));
+    }
 }

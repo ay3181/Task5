@@ -118,6 +118,32 @@ void AMyPlayerController::ShowMainMenu(bool IsRestart)
 				ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Start !"))));
 			}
 		}
+
+		if (IsRestart)
+		{
+			if (UTextBlock* TitleText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TitleText"))))
+			{
+				if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
+				{
+					TitleText->SetText(FText::FromString(FString::Printf(TEXT("Game Over"))));
+				}
+
+			}
+
+			if (UFunction* PlayAnimFunc = MainMenuWidgetInstance->FindFunction(FName("PlayGameOverAnim")))
+			{
+				MainMenuWidgetInstance->ProcessEvent(PlayAnimFunc, nullptr);
+			}
+
+			if (UTextBlock* TotalScoreText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TotalScore"))))
+			{
+				if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
+				{
+					TotalScoreText->SetText(FText::FromString(FString::Printf(TEXT("%d"), MyGameInstance->TotalScore)));
+				}
+				
+			}
+		}
 	}
 }
 
@@ -130,4 +156,5 @@ void AMyPlayerController::StartGame()
 	}
 
 	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
+	SetPause(false);
 }
