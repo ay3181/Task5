@@ -22,6 +22,12 @@ public:
 	USphereComponent* ExplosionRange;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FTimerHandle ExplosionTimerHandle;
+	bool bHasExploded;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Effect")
+	UParticleSystem* ExplosionParticle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Effect")
+	USoundBase* ExplosionSound;
 
 	virtual void ActivateItem(AActor* Activator) override;
 	void Explode();

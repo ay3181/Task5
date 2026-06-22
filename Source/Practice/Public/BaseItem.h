@@ -16,6 +16,20 @@ public:
 	ABaseItem();
 
 protected:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	FName ItemName;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item|Component")
+	USceneComponent* SceneComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item|Component")
+	USphereComponent* Collision;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Item|Component")
+	UStaticMeshComponent* StaticMeshComponent;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Effect")
+	UParticleSystem* PickupParticle;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Effect")
+	USoundBase* PickupSound;
+
 	virtual void OnItemOverlap(
 		UPrimitiveComponent* OverlappedComp,
 		AActor* OtherActor,
@@ -31,14 +45,4 @@ protected:
 	virtual void ActivateItem(AActor* Activator) override;
 	virtual void DestroyItem();
 	virtual FName GetItemName() const override;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
-	FName ItemName;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Component")
-	USceneComponent* SceneComponent;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Component")
-	USphereComponent* Collision;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item|Component")
-	UStaticMeshComponent* StaticMeshComponent;
 };
