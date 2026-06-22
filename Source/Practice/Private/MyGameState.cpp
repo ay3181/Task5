@@ -12,9 +12,14 @@ AMyGameState::AMyGameState()
 	Score = 0;
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
-	LevelDuration = 30.0f;
+	
 	CurrentLevelIndex = 0;
 	MaxLevel = 3;
+
+	WaveDuration = 60.0f;
+	ItemToSpawn = 20;
+	CurrentWaveIndex = 0;
+	MaxWaveLevel = 3;
 }
 
 void AMyGameState::BeginPlay()
@@ -25,14 +30,15 @@ void AMyGameState::BeginPlay()
 	GetWorldTimerManager().SetTimer(HUDUpdateTimerHandle, this, &AMyGameState::UpdateHUD, 0.1f, true);
 }
 
-#pragma region Level
-void AMyGameState::StartLevel()
+#pragma region Wave
+void AMyGameState::StartWave()
 {
 	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
 	{
 		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController))
 		{
 			MyPlayerController->ShowGameHUD();
+			MyPlayerController->ShowWaveText();
 		}
 	}
 
@@ -41,17 +47,33 @@ void AMyGameState::StartLevel()
 		UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(GameInstance);
 		if (MyGameInstance)
 		{
-			CurrentLevelIndex = MyGameInstance->CurrentLevelIndex;
+			CurrentWaveIndex = MyGameInstance->CurrentWaveIndex;
 		}
 	}
 
 	SpawnedCoinCount = 0;
 	CollectedCoinCount = 0;
+	SpawnItem();
+	GetWorldTimerManager().SetTimer(
+		SpawnTimer,
+		this,
+		&AMyGameState::SpawnItem,
+		15.0f,
+		true);
 
+	GetWorldTimerManager().SetTimer(
+		WaveTimer,
+		this,
+		&AMyGameState::EndWave,
+		WaveDuration,
+		false);
+}
+
+void AMyGameState::SpawnItem()
+{
 	TArray<AActor*> FoundVolumes;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
 
-	const int32 ItemToSpawn = 40;
 	for (int32 i = 0; i < ItemToSpawn; i++)
 	{
 		if (FoundVolumes.Num() > 0)
@@ -60,30 +82,39 @@ void AMyGameState::StartLevel()
 			if (SpawnVolume)
 			{
 				AActor* SpawnedActor = SpawnVolume->SpawnRandomItem();
-				if (SpawnedActor && SpawnedActor->IsA(ACoinItem::StaticClass()))
+				if (SpawnedActor)
 				{
-					SpawnedCoinCount++;
+					SpawnedItems.Add(SpawnedActor);
+					if (SpawnedActor->IsA(ACoinItem::StaticClass()))
+					{
+						SpawnedCoinCount++;
+					}
 				}
 			}
 		}
 	}
-
-	GetWorldTimerManager().SetTimer(
-		LevelTimer,
-		this,
-		&AMyGameState::OnLevelTimeUp,
-		LevelDuration,
-		false);
 }
 
-void AMyGameState::OnLevelTimeUp()
+void AMyGameState::DestroyAllItems()
 {
-	EndLevel();
+	for (AActor* Item : SpawnedItems)
+	{
+		if (IsValid(Item))
+		{
+			Item->Destroy();
+		}
+	}
+	SpawnedItems.Empty();
 }
 
-void AMyGameState::EndLevel()
+void AMyGameState::EndWave()
 {
-	GetWorldTimerManager().ClearTimer(LevelTimer);
+	GetWorldTimerManager().ClearTimer(SpawnTimer);
+	GetWorldTimerManager().ClearTimer(WaveTimer);
+	WaveDuration -= 15;
+	ItemToSpawn += 5;
+
+	DestroyAllItems();
 
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
@@ -91,7 +122,60 @@ void AMyGameState::EndLevel()
 		if (MyGameInstance)
 		{
 			AddScore(Score);
-			CurrentLevelIndex++;
+			CurrentWaveIndex++;
+			MyGameInstance->CurrentWaveIndex = CurrentWaveIndex;
+		}
+	}
+
+	if (CurrentWaveIndex >= MaxWaveLevel)
+	{
+		EndLevel();
+		return;
+	}
+	else
+	{
+		StartWave();
+	}
+}
+#pragma endregion
+
+
+#pragma region Level
+void AMyGameState::StartLevel()
+{
+	WaveDuration = 60.0f;
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(GameInstance);
+		if (MyGameInstance)
+		{
+			CurrentLevelIndex = MyGameInstance->CurrentLevelIndex;
+			MyGameInstance->CurrentWaveIndex = 0;
+		}
+	}
+
+	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController))
+		{
+			MyPlayerController->ShowGameHUD();
+		}
+	}
+
+	StartWave();
+}
+
+void AMyGameState::EndLevel()
+{
+	GetWorldTimerManager().ClearTimer(HUDUpdateTimerHandle);
+	CurrentLevelIndex++;
+
+	if (UGameInstance* GameInstance = GetGameInstance())
+	{
+		UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(GameInstance);
+		if (MyGameInstance)
+		{
 			MyGameInstance->CurrentLevelIndex = CurrentLevelIndex;
 		}
 	}
@@ -113,6 +197,10 @@ void AMyGameState::EndLevel()
 
 void AMyGameState::OnGameOver()
 {
+	GetWorldTimerManager().ClearTimer(SpawnTimer);
+	GetWorldTimerManager().ClearTimer(WaveTimer);
+	GetWorldTimerManager().ClearTimer(HUDUpdateTimerHandle);
+
 	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
 	{
 		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController))
@@ -123,6 +211,7 @@ void AMyGameState::OnGameOver()
 	}
 }
 #pragma endregion
+
 
 #pragma region Score
 int32 AMyGameState::GetScore() const
@@ -142,16 +231,10 @@ void AMyGameState::AddScore(int32 Amount)
 }
 #pragma endregion
 
-#pragma region Coin
 void AMyGameState::OnCoinCollected()
 {
 	CollectedCoinCount++;
-	if (SpawnedCoinCount > 0 && CollectedCoinCount >= SpawnedCoinCount)
-	{
-		EndLevel();
-	}
 }
-#pragma endregion
 
 #pragma region UI
 void AMyGameState::UpdateHUD()
@@ -164,7 +247,7 @@ void AMyGameState::UpdateHUD()
 			{
 				if (UTextBlock* TimeText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Time"))))
 				{
-					float RemainingTime = GetWorldTimerManager().GetTimerRemaining(LevelTimer);
+					float RemainingTime = GetWorldTimerManager().GetTimerRemaining(WaveTimer);
 					TimeText->SetText(FText::FromString(FString::Printf(TEXT("%.1f"), RemainingTime)));
 				}
 
@@ -182,6 +265,10 @@ void AMyGameState::UpdateHUD()
 				if (UTextBlock* LevelText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Level"))))
 				{
 					LevelText->SetText(FText::FromString(FString::Printf(TEXT("%d"), CurrentLevelIndex+1)));
+				}
+				if (UTextBlock* WaveLevelText = Cast<UTextBlock>(HUDWidget->GetWidgetFromName(TEXT("Wave"))))
+				{
+					WaveLevelText->SetText(FText::FromString(FString::Printf(TEXT("%d"), CurrentWaveIndex + 1)));
 				}
 			}
 		}

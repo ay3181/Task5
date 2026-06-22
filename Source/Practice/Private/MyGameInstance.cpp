@@ -4,6 +4,7 @@
 UMyGameInstance::UMyGameInstance()
 {
 	TotalScore = 0;
+	CurrentWaveIndex = 0;
 	CurrentLevelIndex = 0;
 }
 

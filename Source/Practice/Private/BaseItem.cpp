@@ -60,7 +60,13 @@ void ABaseItem::ActivateItem(AActor* Activator)
 	if (Particle)
 	{
 		FTimerHandle DestroyParticleTimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(DestroyParticleTimerHandle, [Particle]() {Particle->DestroyComponent(); }, 2.0f, false);
+		GetWorld()->GetTimerManager().SetTimer(DestroyParticleTimerHandle, [Particle]()
+			{
+				if (::IsValid(Particle))
+				{
+					Particle->DestroyComponent();
+				}
+			}, 2.0f, false);
 	}
 }
 

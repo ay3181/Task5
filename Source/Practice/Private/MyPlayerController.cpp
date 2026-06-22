@@ -5,6 +5,7 @@
 #include "Components/TextBlock.h"
 #include "MyGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "MyCharacter.h"
 
 AMyPlayerController::AMyPlayerController()
 	: InputMappingContext(nullptr),
@@ -81,6 +82,30 @@ void AMyPlayerController::ShowGameHUD()
 	}
 }
 
+void AMyPlayerController::ShowWaveText()
+{
+	if (HUDWidgetInstance)
+	{
+		int32 CurrentWaveIndex = 0;
+		if (GetWorld())
+		{
+			if (AMyGameState* MyGameState = GetWorld()->GetGameState<AMyGameState>())
+			{
+				CurrentWaveIndex = MyGameState->CurrentWaveIndex + 1;
+			}
+		}
+		if (UTextBlock* WaveText = Cast<UTextBlock>(HUDWidgetInstance->GetWidgetFromName(TEXT("WaveStartText"))))
+		{
+			WaveText->SetText(FText::FromString(FString::Printf(TEXT("Wave %d Start !"), CurrentWaveIndex)));
+		}
+		UFunction* PlayAnimFunc = HUDWidgetInstance->FindFunction(FName("WaveStartWidget"));
+		if (PlayAnimFunc)
+		{
+			HUDWidgetInstance->ProcessEvent(PlayAnimFunc, nullptr);
+		}
+	}
+}
+
 //메뉴화면
 void AMyPlayerController::ShowMainMenu(bool IsRestart)
 {
@@ -152,9 +177,17 @@ void AMyPlayerController::StartGame()
 	if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		MyGameInstance->CurrentLevelIndex = 0;
+		MyGameInstance->CurrentWaveIndex = 0;
 		MyGameInstance->TotalScore = 0;
 	}
+	if (APawn* Activator = GetPawn())
+	{
+		if (AMyCharacter* MyCharacter = Cast<AMyCharacter>(Activator))
+		{
+			MyCharacter->Health = MyCharacter->MaxHealth;
+		}
+	}
 
-	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
 	SetPause(false);
+	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
 }
