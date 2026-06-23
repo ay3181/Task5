@@ -31,6 +31,28 @@ public:
 #pragma endregion
 
 
+#pragma region Wave
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Level")
+	int32 CurrentWaveIndex;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Level")
+	int32 MaxWaveLevel;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
+	float WaveDuration;
+	UPROPERTY()
+	TArray<AActor*> SpawnedItems;
+
+	FTimerHandle WaveTimer;
+	int32 ItemToSpawn;
+	FTimerHandle SpawnTimer;
+
+	UFUNCTION(BlueprintCallable, Category = "Wave")
+	void StartWave();
+	void SpawnItem();
+	void DestroyAllItems();
+	void EndWave();
+#pragma endregion
+
+
 #pragma region Level
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
 	TArray<FName> LevelMapNames;
@@ -39,17 +61,13 @@ public:
 	int32 CurrentLevelIndex;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Level")
 	int32 MaxLevel;
-	FTimerHandle LevelTimer;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Level")
-	float LevelDuration;
+	
 
 	void StartLevel();
-	void OnLevelTimeUp();
 	void EndLevel();
 	UFUNCTION(BlueprintCallable, Category = "Level")
 	void OnGameOver();
 #pragma endregion
-
 
 #pragma region UI
 	FTimerHandle HUDUpdateTimerHandle;

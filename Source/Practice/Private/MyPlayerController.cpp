@@ -4,7 +4,9 @@
 #include "MyGameState.h"
 #include "Components/TextBlock.h"
 #include "MyGameInstance.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
+#include "MyCharacter.h"
 
 AMyPlayerController::AMyPlayerController()
 	: InputMappingContext(nullptr),
@@ -50,33 +52,64 @@ UUserWidget* AMyPlayerController::GetHUDWidget()
 //게임화면 (아마)
 void AMyPlayerController::ShowGameHUD()
 {
-	if (HUDWidgetInstance)
+	if (IsValid(HUDWidgetInstance))
 	{
 		HUDWidgetInstance->RemoveFromParent();
 		HUDWidgetInstance = nullptr;
 	}
 
-	if (MainMenuWidgetInstance)
+	if (IsValid(MainMenuWidgetInstance))
 	{
 		MainMenuWidgetInstance->RemoveFromParent();
 		MainMenuWidgetInstance = nullptr;
 	}
 
-	if (HUDWidgetClass)
+	if (!HUDWidgetClass)
 	{
-		HUDWidgetInstance = CreateWidget<UUserWidget>(this, HUDWidgetClass);
-		if (HUDWidgetInstance)
+		UE_LOG(LogTemp, Error, TEXT("HUDWidgetClass is null"));
+		return;
+	}
+
+	HUDWidgetInstance = CreateWidget<UUserWidget>(this, HUDWidgetClass);
+
+	if (!IsValid(HUDWidgetInstance))
+	{
+		UE_LOG(LogTemp, Error, TEXT("HUDWidgetInstance create failed"));
+		return;
+	}
+
+	HUDWidgetInstance->AddToViewport();
+
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly());
+
+	AMyGameState* MyGameState = GetWorld() ? GetWorld()->GetGameState<AMyGameState>() : nullptr;
+	if (IsValid(MyGameState))
+	{
+		MyGameState->UpdateHUD();
+	}
+}
+
+void AMyPlayerController::ShowWaveText()
+{
+	if (HUDWidgetInstance)
+	{
+		int32 CurrentWaveIndex = 0;
+		if (GetWorld())
 		{
-			HUDWidgetInstance->AddToViewport();
-
-			bShowMouseCursor = false;
-			SetInputMode(FInputModeGameOnly());
-
-			AMyGameState* MyGameState = GetWorld() ? GetWorld()->GetGameState<AMyGameState>() : nullptr;
-			if (MyGameState)
+			if (AMyGameState* MyGameState = GetWorld()->GetGameState<AMyGameState>())
 			{
-				MyGameState->UpdateHUD();
+				CurrentWaveIndex = MyGameState->CurrentWaveIndex + 1;
 			}
+		}
+		if (UTextBlock* WaveText = Cast<UTextBlock>(HUDWidgetInstance->GetWidgetFromName(TEXT("WaveStartText"))))
+		{
+			WaveText->SetText(FText::FromString(FString::Printf(TEXT("Wave %d Start !"), CurrentWaveIndex)));
+		}
+		UFunction* PlayAnimFunc = HUDWidgetInstance->FindFunction(FName("WaveStartWidget"));
+		if (PlayAnimFunc)
+		{
+			HUDWidgetInstance->ProcessEvent(PlayAnimFunc, nullptr);
 		}
 	}
 }
@@ -84,64 +117,78 @@ void AMyPlayerController::ShowGameHUD()
 //메뉴화면
 void AMyPlayerController::ShowMainMenu(bool IsRestart)
 {
-	if (HUDWidgetInstance)
+	if (IsValid(HUDWidgetInstance))
 	{
 		HUDWidgetInstance->RemoveFromParent();
 		HUDWidgetInstance = nullptr;
 	}
 
-	if (MainMenuWidgetInstance)
+	if (IsValid(MainMenuWidgetInstance))
 	{
 		MainMenuWidgetInstance->RemoveFromParent();
 		MainMenuWidgetInstance = nullptr;
 	}
 
-	if (MainMenuWidgetClass)
+	if (!MainMenuWidgetClass)
 	{
-		MainMenuWidgetInstance = CreateWidget<UUserWidget>(this, MainMenuWidgetClass);
-		if (MainMenuWidgetInstance)
-		{
-			MainMenuWidgetInstance->AddToViewport();
+		UE_LOG(LogTemp, Error, TEXT("MainMenuWidgetClass is null"));
+		return;
+	}
 
-			bShowMouseCursor = true;
-			SetInputMode(FInputModeUIOnly());
-		}
+	MainMenuWidgetInstance = CreateWidget<UUserWidget>(this, MainMenuWidgetClass);
 
-		if (UTextBlock* ButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("StartButtonText"))))
-		{
-			if (IsRestart)
-			{
-				ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Restart !"))));
-			}
-			else
-			{
-				ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Start !"))));
-			}
-		}
+	if (!IsValid(MainMenuWidgetInstance))
+	{
+		UE_LOG(LogTemp, Error, TEXT("MainMenuWidgetInstance create failed"));
+		return;
+	}
 
+	MainMenuWidgetInstance->AddToViewport();
+
+	bShowMouseCursor = true;
+	SetInputMode(FInputModeUIOnly());
+
+	if (UTextBlock* ButtonText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("StartButtonText"))))
+	{
 		if (IsRestart)
 		{
-			if (UTextBlock* TitleText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TitleText"))))
-			{
-				if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
-				{
-					TitleText->SetText(FText::FromString(FString::Printf(TEXT("Game Over"))));
-				}
+			ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Restart"))));
+		}
+		else
+		{
+			ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Start"))));
+		}
+	}
 
+	if (IsRestart)
+	{
+		if (UTextBlock* TitleText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TitleText"))))
+		{
+			if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
+			{
+				TitleText->SetText(FText::FromString(FString::Printf(TEXT("Game Over"))));
 			}
 
-			if (UFunction* PlayAnimFunc = MainMenuWidgetInstance->FindFunction(FName("PlayGameOverAnim")))
-			{
-				MainMenuWidgetInstance->ProcessEvent(PlayAnimFunc, nullptr);
-			}
+		}
 
-			if (UTextBlock* TotalScoreText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TotalScore"))))
+		if (UFunction* PlayAnimFunc = MainMenuWidgetInstance->FindFunction(FName("PlayGameOverAnim")))
+		{
+			MainMenuWidgetInstance->ProcessEvent(PlayAnimFunc, nullptr);
+		}
+
+		if (UTextBlock* TotalScoreText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("TotalScore"))))
+		{
+			if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
 			{
-				if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
-				{
-					TotalScoreText->SetText(FText::FromString(FString::Printf(TEXT("%d"), MyGameInstance->TotalScore)));
-				}
-				
+				TotalScoreText->SetText(FText::FromString(FString::Printf(TEXT("%d"), MyGameInstance->TotalScore)));
+			}
+		}
+
+		if (UTextBlock* QuitText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("QuitButtonText"))))
+		{
+			if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
+			{
+				QuitText->SetText(FText::FromString(FString::Printf(TEXT("Main\nMenu"))));
 			}
 		}
 	}
@@ -152,9 +199,47 @@ void AMyPlayerController::StartGame()
 	if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
 	{
 		MyGameInstance->CurrentLevelIndex = 0;
+		MyGameInstance->CurrentWaveIndex = 0;
 		MyGameInstance->TotalScore = 0;
 	}
 
-	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
 	SetPause(false);
+	UGameplayStatics::OpenLevel(this, FName("BasicLevel"));
+}
+
+void AMyPlayerController::QuitGame()
+{
+	FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+
+	if (CurrentLevelName == TEXT("MenuLevel"))
+	{
+		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+
+		UKismetSystemLibrary::QuitGame(
+			this,
+			PlayerController,
+			EQuitPreference::Quit,
+			true
+		);
+
+		return;
+	}
+
+	if (IsValid(HUDWidgetInstance))
+	{
+		HUDWidgetInstance->RemoveFromParent();
+		HUDWidgetInstance = nullptr;
+	}
+
+	if (IsValid(MainMenuWidgetInstance))
+	{
+		MainMenuWidgetInstance->RemoveFromParent();
+		MainMenuWidgetInstance = nullptr;
+	}
+
+	SetPause(false);
+	bShowMouseCursor = false;
+	SetInputMode(FInputModeGameOnly());
+
+	UGameplayStatics::OpenLevel(this, FName("MenuLevel"));
 }
