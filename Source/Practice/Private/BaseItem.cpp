@@ -57,16 +57,26 @@ void ABaseItem::ActivateItem(AActor* Activator)
 		UGameplayStatics::PlaySoundAtLocation(GetWorld(), PickupSound, GetActorLocation());
 	}
 
-	if (Particle)
+	if (IsValid(Particle))
 	{
 		FTimerHandle DestroyParticleTimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(DestroyParticleTimerHandle, [Particle]()
-			{
-				if (::IsValid(Particle))
+		TWeakObjectPtr<UParticleSystemComponent> WeakParticle = Particle;
+
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimer(
+				DestroyParticleTimerHandle,
+				[WeakParticle]()
 				{
-					Particle->DestroyComponent();
-				}
-			}, 2.0f, false);
+					if (WeakParticle.IsValid())
+					{
+						WeakParticle->DestroyComponent();
+					}
+				},
+				2.0f,
+				false
+			);
+		}
 	}
 }
 

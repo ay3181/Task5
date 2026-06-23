@@ -29,6 +29,11 @@ void AMineItem::ActivateItem(AActor* Activator)
 
 void AMineItem::Explode()
 {
+	if (!GetWorld() || !IsValid(ExplosionRange))
+	{
+		return;
+	}
+
 	UParticleSystemComponent* Particle = nullptr ;
 	if (ExplosionParticle)
 	{
@@ -51,9 +56,25 @@ void AMineItem::Explode()
 	}
 	DestroyItem();
 	
-	if (Particle)
+	if (IsValid(Particle))
 	{
 		FTimerHandle DestroyParticleTimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(DestroyParticleTimerHandle, [Particle]() {Particle->DestroyComponent(); }, 2.0f, false);
+		TWeakObjectPtr<UParticleSystemComponent> WeakParticle = Particle;
+
+		if (UWorld* World = GetWorld())
+		{
+			World->GetTimerManager().SetTimer(
+				DestroyParticleTimerHandle,
+				[WeakParticle]()
+				{
+					if (WeakParticle.IsValid())
+					{
+						WeakParticle->DestroyComponent();
+					}
+				},
+				2.0f,
+				false
+			);
+		}
 	}
 }

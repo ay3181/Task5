@@ -155,15 +155,6 @@ void AMyGameState::StartLevel()
 			MyGameInstance->CurrentWaveIndex = 0;
 		}
 	}
-
-	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
-	{
-		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController))
-		{
-			MyPlayerController->ShowGameHUD();
-		}
-	}
-
 	StartWave();
 }
 
