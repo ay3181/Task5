@@ -4,6 +4,7 @@
 #include "MyGameState.h"
 #include "Components/TextBlock.h"
 #include "MyGameInstance.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "MyCharacter.h"
 
@@ -136,11 +137,11 @@ void AMyPlayerController::ShowMainMenu(bool IsRestart)
 		{
 			if (IsRestart)
 			{
-				ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Restart !"))));
+				ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Restart"))));
 			}
 			else
 			{
-				ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Start !"))));
+				ButtonText->SetText(FText::FromString(FString::Printf(TEXT("Start"))));
 			}
 		}
 
@@ -166,7 +167,14 @@ void AMyPlayerController::ShowMainMenu(bool IsRestart)
 				{
 					TotalScoreText->SetText(FText::FromString(FString::Printf(TEXT("%d"), MyGameInstance->TotalScore)));
 				}
-				
+			}
+
+			if (UTextBlock* QuitText = Cast<UTextBlock>(MainMenuWidgetInstance->GetWidgetFromName(TEXT("QuitButtonText"))))
+			{
+				if (UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(UGameplayStatics::GetGameInstance(this)))
+				{
+					QuitText->SetText(FText::FromString(FString::Printf(TEXT("Main\nMenu"))));
+				}
 			}
 		}
 	}
@@ -180,14 +188,35 @@ void AMyPlayerController::StartGame()
 		MyGameInstance->CurrentWaveIndex = 0;
 		MyGameInstance->TotalScore = 0;
 	}
-	if (APawn* Activator = GetPawn())
+	/*if (APawn* Activator = GetPawn())
 	{
 		if (AMyCharacter* MyCharacter = Cast<AMyCharacter>(Activator))
 		{
 			MyCharacter->Health = MyCharacter->MaxHealth;
 		}
-	}
+	}*/
 
 	SetPause(false);
-	UGameplayStatics::OpenLevel(GetWorld(), FName("BasicLevel"));
+	UGameplayStatics::OpenLevel(this, FName("BasicLevel"));
+}
+
+void AMyPlayerController::QuitGame()
+{
+	FString CurrentLevelName = UGameplayStatics::GetCurrentLevelName(this);
+	if (CurrentLevelName == FName("MenuLevel"))
+	{
+		APlayerController* PlayerController = UGameplayStatics::GetPlayerController(this, 0);
+
+		UKismetSystemLibrary::QuitGame(
+			this,
+			PlayerController,
+			EQuitPreference::Quit,
+			true
+		);
+	}
+	else
+	{
+		SetPause(false);
+		UGameplayStatics::OpenLevel(GetWorld(), FName("MenuLevel"));
+	}
 }

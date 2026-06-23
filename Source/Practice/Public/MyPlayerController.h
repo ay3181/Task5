@@ -46,6 +46,8 @@ public:
 	void ShowMainMenu(bool IsRestart);
 	UFUNCTION(BlueprintCallable, Category = "Menu")
 	void StartGame();
+	UFUNCTION(BlueprintCallable, Category = "Menu")
+	void QuitGame();
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void ShowWaveText();
 

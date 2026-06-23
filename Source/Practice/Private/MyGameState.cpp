@@ -71,6 +71,7 @@ void AMyGameState::StartWave()
 
 void AMyGameState::SpawnItem()
 {
+
 	TArray<AActor*> FoundVolumes;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
 
