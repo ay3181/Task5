@@ -41,6 +41,9 @@ public:
 	UPROPERTY()
 	TArray<AActor*> SpawnedItems;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Spawn")
+	TSubclassOf<AActor> ThornClass;
+
 	FTimerHandle WaveTimer;
 	int32 ItemToSpawn;
 	FTimerHandle SpawnTimer;
@@ -48,6 +51,7 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Wave")
 	void StartWave();
 	void SpawnItem();
+	void SpawnThorn();
 	void DestroyAllItems();
 	void EndWave();
 #pragma endregion

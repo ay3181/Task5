@@ -7,6 +7,7 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "MyCharacter.h"
+#include "Components/Image.h"
 
 AMyPlayerController::AMyPlayerController()
 	: InputMappingContext(nullptr),
@@ -114,6 +115,60 @@ void AMyPlayerController::ShowWaveText()
 	}
 }
 
+void AMyPlayerController::ShowThornWarning()
+{
+	if (HUDWidgetInstance)
+	{
+		UFunction* PlayAnimFunc = HUDWidgetInstance->FindFunction(FName("ThornWarning"));
+		if (PlayAnimFunc)
+		{
+			HUDWidgetInstance->ProcessEvent(PlayAnimFunc, nullptr);
+		}
+	}
+}
+
+void AMyPlayerController::ShowSlowImage()
+{
+	if (UImage* SlowImage = Cast<UImage>(HUDWidgetInstance->GetWidgetFromName(TEXT("SlowImage"))))
+	{
+		SlowImage->SetVisibility(ESlateVisibility::Visible);
+
+		FTimerDelegate SpeedBackDelegate;
+		SpeedBackDelegate.BindLambda([SlowImage]()
+			{
+				SlowImage->SetVisibility(ESlateVisibility::Collapsed);
+			});
+
+		GetWorld()->GetTimerManager().SetTimer(
+			SpeedBackWidget,
+			SpeedBackDelegate,
+			8.0f,
+			false
+		);
+	}
+}
+
+void AMyPlayerController::ShowReverseImage()
+{
+	if (UImage* ReverseImage = Cast<UImage>(HUDWidgetInstance->GetWidgetFromName(TEXT("ReverseImage"))))
+	{
+		ReverseImage->SetVisibility(ESlateVisibility::Visible);
+
+		FTimerDelegate MoveBackDelegate;
+		MoveBackDelegate.BindLambda([ReverseImage]()
+			{
+				ReverseImage->SetVisibility(ESlateVisibility::Collapsed);
+			});
+
+		GetWorld()->GetTimerManager().SetTimer(
+			MoveBackWidget,
+			MoveBackDelegate,
+			8.0f,
+			false
+		);
+	}
+}
+
 //메뉴화면
 void AMyPlayerController::ShowMainMenu(bool IsRestart)
 {
@@ -131,7 +186,6 @@ void AMyPlayerController::ShowMainMenu(bool IsRestart)
 
 	if (!MainMenuWidgetClass)
 	{
-		UE_LOG(LogTemp, Error, TEXT("MainMenuWidgetClass is null"));
 		return;
 	}
 
@@ -139,7 +193,6 @@ void AMyPlayerController::ShowMainMenu(bool IsRestart)
 
 	if (!IsValid(MainMenuWidgetInstance))
 	{
-		UE_LOG(LogTemp, Error, TEXT("MainMenuWidgetInstance create failed"));
 		return;
 	}
 

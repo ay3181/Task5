@@ -16,6 +16,4 @@ public:
 
 protected:
 	float NerfTime;
-	float OriginSpeed;
-	float OriginSprintSpeed;
 };

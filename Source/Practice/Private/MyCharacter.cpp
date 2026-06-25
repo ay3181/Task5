@@ -33,6 +33,7 @@ AMyCharacter::AMyCharacter()
 
     MaxHealth = 100.0f;
     Health = MaxHealth;
+    IsMoveReverse = false;
 }
 
 void AMyCharacter::BeginPlay()
@@ -121,7 +122,13 @@ void AMyCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 void AMyCharacter::Move(const FInputActionValue& value)
 {
     if (!Controller) return;
-    const FVector2D MoveInput = value.Get<FVector2D>();
+    FVector2D MoveInput = value.Get<FVector2D>();
+
+    if (IsMoveReverse)
+    {
+        MoveInput.X *= -1;
+        MoveInput.Y *= -1;
+    }
 
     if (!FMath::IsNearlyZero(MoveInput.X))
     {

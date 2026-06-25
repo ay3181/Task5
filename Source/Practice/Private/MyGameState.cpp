@@ -6,6 +6,7 @@
 #include "MyGameInstance.h"
 #include "Components/TextBlock.h"
 #include "Blueprint/UserWidget.h"
+#include "Thorn.h"
 
 AMyGameState::AMyGameState()
 {
@@ -33,21 +34,26 @@ void AMyGameState::BeginPlay()
 #pragma region Wave
 void AMyGameState::StartWave()
 {
-	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
-	{
-		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController))
-		{
-			MyPlayerController->ShowGameHUD();
-			MyPlayerController->ShowWaveText();
-		}
-	}
-
 	if (UGameInstance* GameInstance = GetGameInstance())
 	{
 		UMyGameInstance* MyGameInstance = Cast<UMyGameInstance>(GameInstance);
 		if (MyGameInstance)
 		{
 			CurrentWaveIndex = MyGameInstance->CurrentWaveIndex;
+		}
+	}
+
+	if (APlayerController* PlayerController = GetWorld()->GetFirstPlayerController())
+	{
+		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(PlayerController))
+		{
+			MyPlayerController->ShowGameHUD();
+			MyPlayerController->ShowWaveText();
+			if (CurrentWaveIndex >= 1)
+			{
+				MyPlayerController->ShowThornWarning();
+				SpawnThorn();
+			}
 		}
 	}
 
@@ -90,6 +96,33 @@ void AMyGameState::SpawnItem()
 					{
 						SpawnedCoinCount++;
 					}
+				}
+			}
+		}
+	}
+}
+
+void AMyGameState::SpawnThorn()
+{
+	TArray<AActor*> FoundVolumes;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASpawnVolume::StaticClass(), FoundVolumes);
+
+	for (int32 i = 0; i < 3*CurrentWaveIndex; i++)
+	{
+		if (FoundVolumes.Num() > 0)
+		{
+			ASpawnVolume* SpawnVolume = Cast<ASpawnVolume>(FoundVolumes[0]);
+			if (SpawnVolume)
+			{
+				AThorn* SpawnedThorn = GetWorld()->SpawnActor<AThorn>(
+					ThornClass,
+					SpawnVolume->GetRandomPointInVolume(),
+					FRotator::ZeroRotator
+				);
+
+				if (SpawnedThorn)
+				{
+					SpawnedItems.Add(SpawnedThorn);
 				}
 			}
 		}
