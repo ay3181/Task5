@@ -14,6 +14,7 @@ void ASlowingItem::ActivateItem(AActor* Activator)
 	Super::ActivateItem(Activator);
 
 	//람다식 쓰기가 어려워서 에이타니 도움받음
+	//속도변경 실시간으로 적용안되는 버그 있어서 그것도 도움받음
 	if (AMyCharacter* MyCharacter = Cast<AMyCharacter>(Activator))
 	{
 		if (AMyPlayerController* MyPlayerController = Cast<AMyPlayerController>(MyCharacter->GetController()))
@@ -21,8 +22,8 @@ void ASlowingItem::ActivateItem(AActor* Activator)
 			MyPlayerController->ShowSlowImage();
 		}
 
-		float OriginSpeed = MyCharacter->NormalSpeed;
-		float OriginSprintSpeed = MyCharacter->SprintSpeed;
+		float OriginSpeed = 600.0f;
+		float OriginSprintSpeed = OriginSpeed * MyCharacter->SprintSpeedMultiplier;
 
 		MyCharacter->NormalSpeed = OriginSpeed / 2;
 		MyCharacter->SprintSpeed = OriginSprintSpeed / 2;
@@ -37,13 +38,13 @@ void ASlowingItem::ActivateItem(AActor* Activator)
 		{
 			if (IsValid(MyCharacter))
 			{
-				MyCharacter->NormalSpeed = OriginSpeed;
-				MyCharacter->SprintSpeed = OriginSprintSpeed;
-
 				if (MyCharacter->GetCharacterMovement())
 				{
 					MyCharacter->GetCharacterMovement()->MaxWalkSpeed *= 2.0f;
 				}
+
+				MyCharacter->NormalSpeed = OriginSpeed;
+				MyCharacter->SprintSpeed = OriginSprintSpeed;
 			}
 		});
 
