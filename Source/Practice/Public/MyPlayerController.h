@@ -33,6 +33,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "HUD")
 	UUserWidget* HUDWidgetInstance;
 
+	FTimerHandle SpeedBackWidget;
+	FTimerHandle MoveBackWidget;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Menu")
 	TSubclassOf<UUserWidget> MainMenuWidgetClass;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Menu")
@@ -50,6 +53,12 @@ public:
 	void QuitGame();
 	UFUNCTION(BlueprintCallable, Category = "HUD")
 	void ShowWaveText();
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void ShowThornWarning();
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void ShowSlowImage();
+	UFUNCTION(BlueprintCallable, Category = "HUD")
+	void ShowReverseImage();
 
 	virtual void BeginPlay() override;
 };

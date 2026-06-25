@@ -17,6 +17,7 @@ class PRACTICE_API AMyCharacter : public ACharacter
 public:
 	AMyCharacter();
 
+	bool IsMoveReverse;
 	float NormalSpeed, SprintSpeed;
 	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category="Speed")
 	float SprintSpeedMultiplier;
